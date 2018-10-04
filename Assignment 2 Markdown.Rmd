@@ -1,0 +1,9 @@
+---
+title: "Assignment 2"
+author: "James Wu, Hongye Wu, Third Person"
+date: "October 4, 2018"
+output: pdf_document
+---
+
+
+START HERE
