@@ -149,9 +149,10 @@ poll_full_model <- glm(formula = major_or_not ~ 1 + .,family = "binomial",data =
 
 #Convert to probabilistic predictions
 poll_full_model_pred <- predict(poll_full_model, type = 'response')
+poll_data_full <- mutate(poll_data_full,predictprob = poll_full_model_pred)
 
 #Histogram with predicted probabilities
-ggplot(poll_data_full %>% mutate(predictprob = poll_full_model_pred),aes(x=predictprob)) +
+ggplot(poll_data_full,aes(x=predictprob)) +
   geom_histogram(bins = 100) +
   labs(x = "Probability of Voting for Major Candidate (2008)")
 ```
@@ -174,9 +175,9 @@ poll_full_major_model <- glm(formula = vote_2008 ~ 1 + .,family = "binomial",dat
 ```{r}
 #Convert to probabilistic predictions
 poll_full_major_model_pred <- predict(poll_full_major_model, type = 'response')
-
+poll_full_major_data <- mutate(poll_full_major_data,predictprob = poll_full_major_model_pred)
 #Histogram of the predicted conditional probability
-ggplot(poll_full_major_data %>% mutate(predictprob = poll_full_major_model_pred),aes(x=predictprob)) +
+ggplot(poll_full_major_data,aes(x=predictprob)) +
   geom_histogram(bins = 100) +
   labs(x = "Probability of Voting for Obama | Voted Major Candidate (2008)")
 ```
@@ -184,6 +185,48 @@ ggplot(poll_full_major_data %>% mutate(predictprob = poll_full_major_model_pred)
 
 #### iv. Use the models from steps i) and ii) to compute, for each individual, the probability that the individual votes for the three candidates. Generate categorical predictions for each individual based on these probabilities, and report the accuracy of your classifier.
 ```{r}
+# In i) we predicted whether a person was going to vote other. In ii) we predicted whether those who voted major candidates voted either obama or mcCain. We would just need to combine these two predictions into one via a two-step categorizing process.
+
+# The problem is the prediction of whether a person voted for a major candidate or not did not seem accurate, as the predicted probablities were mostly 90%+. I'll try building grid search function to find the optimal cutoff for accuracy.
+OptAccuracy <- function(dataframe, PredictVarName,ClassifierVarName){
+  PredictedClassifier <- dataframe[,PredictVarName]
+  Classifier <- dataframe[,ClassifierVarName]
+  nPoints <- nrow(PredictedClassifier)
+  p_grid <- seq(from = min(PredictedClassifier), to = max(PredictedClassifier),length.out = nPoints)
+  AccuracyVector <- rep(NA,nPoints)
+  
+  for(i in 1:length(p_grid)){
+    AccuracyVector[i] <- sum(ifelse(PredictedClassifier > p_grid[i],1,0) == Classifier)/nPoints
+  }
+  
+  p_grid[which.max(AccuracyVector)]
+  #plot(AccuracyVector~p_grid)
+}
+
+OptAccuracy(poll_data_full,"predictprob","major_or_not")
+```
+We see the optimal cutoff is the minimum prediction probability. In other words, to improve our accuracy, we should essentially predict everybody to have voted for a major candidate.
+
+```{r}
+poll_full_major_data <- mutate(poll_full_major_data, vote_2008 = ifelse(vote_2008 == "barack obama", 1, 0))
+OptAccuracy(poll_full_major_data,"predictprob","vote_2008")
+```
+Within the people who voted a major candidate, the optimal cutoff point for the highest accuracy is around 0.5.
+
+```{r}
+# Create categorical predictions for the three candidates 
+poll_data_full <- mutate(poll_data_full,pred_candidates = NA)
+poll_data_full[,"pred_candidates"] <- ifelse(poll_full_model_pred < 0.7380653,"Other",NA)
+poll_data_full[which(poll_data_full$major_or_not == 1),"pred_candidates"] <- ifelse(poll_full_major_model_pred >= 0.5,"barack obama","john mcCain")
+
+#Accuracy
+sum(poll_data_full$pred_candidates == poll_data_full$vote_2008,na.rm=T)/nrow(poll_data_full)
+```
+
+
+
+```{r}
+
 # Create categorical predictions for the three candidates 
 poll_data_full <- poll_data_full %>% 
   mutate(
