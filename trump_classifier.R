@@ -88,6 +88,7 @@ trump_tweets <-mutate(trump_tweets, Republican = ifelse(str_detect(text, "(Repub
 # C) Divide dataset -------------------------------------------------------
 
 # Randomly select training and testing sets from the original dataset
+set.seed(123)
 dt = sort(sample(nrow(trump_tweets), nrow(trump_tweets)*.8))
 training <- trump_tweets[dt,]
 test <- trump_tweets[-dt,]
@@ -96,11 +97,11 @@ test <- trump_tweets[-dt,]
 nb_model <- training %>% 
   naive_bayes(source ~ multimedia + retweet + hashtag + Republican + Democrat,laplace = 1,data=.)
 
-test <- mutate(test, prediction = predict(nb_model,test))
+#Predictions
+prediction<-ifelse(predict(nb_model,test)=="Trump",1,0)
+write_csv(data.frame(prediction),"prediction.csv")
 
 
-#Load the test dataset trump_hidden_test_set.csv
-#test_data<-read_csv("./Data/trump_data.tsv")
 
 
 
