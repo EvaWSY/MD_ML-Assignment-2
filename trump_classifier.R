@@ -14,6 +14,8 @@ library(twitteR)
 library(lubridate)
 library(scales)
 library(naivebayes)
+library(e1071)
+library(tidytext)
 
 trump_tweets <- read_tsv("./Data/trump_data.tsv", col_names = c("source", "time_posted", "text"))
 
@@ -31,6 +33,7 @@ trump_tweets %>%
        y = "% of tweets",
        color = "")
 # So Trump usually tweets in the early morning, whereas his staff usually tweets in the afternoon and early evening
+# Add the feature "hour" to the trump_tweets data.
 trump_tweets <- mutate(trump_tweets, hour = hour(with_tz(time_posted, "EST")))
 
 
@@ -56,6 +59,22 @@ trump_tweets %>% count(
   mutate(percent = n / sum(n))
 trump_tweets <-mutate(trump_tweets, hashtag = ifelse(str_detect(text, "#"), "yes", "no"))
 
+trump_tweets %>% count(
+  source, hashtag = ifelse(str_detect(text, "#"), "hastag", "no hastag")
+) %>% 
+  mutate(percent = n / sum(n))
+trump_tweets <-mutate(trump_tweets, hashtag = ifelse(str_detect(text, "#"), "yes", "no"))
+
+#Comparison of words: extract key words in each tweet 
+reg <- "([^A-Za-z\\d#@']|'(?![A-Za-z\\d#@]))"
+tweet_words <- trump_tweets %>%
+  filter(!str_detect(text, '^"')) %>%
+  mutate(text = str_replace_all(text, "https://t.co/[A-Za-z\\d]+|&amp;", "")) %>%
+  unnest_tokens(word, text, token = "regex", pattern = reg) %>%
+  filter(!word %in% stop_words$word,
+         str_detect(word, "[a-z]"))
+#add severeal key workds to the model? (whether used or not?)
+#check the frequency of keywords?
 
 # C) Divide dataset -------------------------------------------------------
 
@@ -64,6 +83,12 @@ dt = sort(sample(nrow(trump_tweets), nrow(trump_tweets)*.8))
 training <- trump_tweets[dt,]
 test <- trump_tweets[-dt,]
 
+  
 # Naive Bayes model
+nb<- naive_bayes(source~hour+mutlimedia+retweet+hashtag ,data= training,prior = NULL, laplace = 1 )
+NB_Predictions=predict(nb,test)
+summary(NB_Predictions)
 
-nb_mode <- training %>% 
+
+#Load the test dataset trump_hidden_test_set.csv
+#test_data<-read_csv("./Data/trump_data.tsv")
