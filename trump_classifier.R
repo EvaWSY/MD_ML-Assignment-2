@@ -51,11 +51,24 @@ trump_tweets <-mutate(trump_tweets, retweet = ifelse(str_detect(text, '^"'), "ye
 
 # Staff seems to like using hashtag much more than Trump
 trump_tweets %>% count(
-  source, hashtag = ifelse(str_detect(text, "#"), "hastag", "no hastag")
+  source, hashtag = ifelse(str_detect(text, "#"), "hashtag", "no hashtag")
 ) %>% 
   mutate(percent = n / sum(n))
 trump_tweets <-mutate(trump_tweets, hashtag = ifelse(str_detect(text, "#"), "yes", "no"))
 
+# While not a large predictor, Trump seems to like to mention "Democrats" and "Republican"
+trump_tweets %>% count(source,
+                       Democrats = ifelse(str_detect(text, "(Democrat)"),
+                                           "Democrat", "No Democrat")) %>% 
+  mutate(percent = n / sum(n))
+
+trump_tweets %>% count(source,
+                       Democrats = ifelse(str_detect(text, "(Republican)"),
+                                          "Republican", "No Republican")) %>% 
+  mutate(percent = n / sum(n))
+
+trump_tweets <-mutate(trump_tweets, Republican = ifelse(str_detect(text, "(Republican)"), "yes", "no"),
+                      Democrat = ifelse(str_detect(text, "(Republican)"), "yes", "no"))
 
 # C) Divide dataset -------------------------------------------------------
 
@@ -66,4 +79,9 @@ test <- trump_tweets[-dt,]
 
 # Naive Bayes model
 
-nb_mode <- training %>% 
+nb_model <- training %>% 
+  naive_bayes(source ~ mutlimedia + retweet + hashtag + Republican + Democrat,laplace = 1,data=.)
+
+test <- mutate(test, prediction = predict(nb_model,test))
+
+
