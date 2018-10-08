@@ -97,12 +97,25 @@ test <- trump_tweets[-dt,]
 nb_model <- training %>% 
   naive_bayes(source ~ multimedia + retweet + hashtag + Republican + Democrat,laplace = 1,data=.)
 
+pred<- predict(nb_model,test)
+# check for performance
+accurate_pred <- sum(test$source == pred)/nrow(test)
+accurate_pred
+precision <-sum(test$source==pred & pred =="Trump")/sum(pred=="Trump")
+precision
+recall<- sum(test$source==pred & pred == "Trump")/(sum(test$source==pred & pred == "Trump")+sum(test$source!=pred & pred == "Staff"))
+recall
+
+
+
+
+# D) Divide dataset and implement the classifier -------------------------------------------------------
+#read in test data
+hidden_test_data = read_tsv("./Data/trump_hidden_test_set.tsv",col_names = FALSE)
+
 #Predictions
-prediction<-ifelse(predict(nb_model,test)=="Trump",1,0)
+prediction<-ifelse(predict(nb_model,hidden_test_data)=="Trump",1,0)
 write_csv(data.frame(prediction),"prediction.csv")
-
-
-
 
 
 
