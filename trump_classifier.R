@@ -43,7 +43,7 @@ trump_tweets %>% count(source,
                         multimedia = ifelse(str_detect(text, "t.co"),
                                   "multimedia", "just text")) %>% 
                  mutate(percent = n / sum(n))
-trump_tweets <-mutate(trump_tweets, mutlimedia = ifelse(str_detect(text, "t.co"), "multimedia", "just text"))
+trump_tweets <-mutate(trump_tweets, multimedia = ifelse(str_detect(text, "t.co"), "multimedia", "just text"))
 
 # Trump also seems to be more likely to retweet others
 trump_tweets %>% count(
@@ -59,13 +59,6 @@ trump_tweets %>% count(
   mutate(percent = n / sum(n))
 trump_tweets <-mutate(trump_tweets, hashtag = ifelse(str_detect(text, "#"), "yes", "no"))
 
-<<<<<<< HEAD
-trump_tweets %>% count(
-  source, hashtag = ifelse(str_detect(text, "#"), "hastag", "no hastag")
-) %>% 
-  mutate(percent = n / sum(n))
-trump_tweets <-mutate(trump_tweets, hashtag = ifelse(str_detect(text, "#"), "yes", "no"))
-
 #Comparison of words: extract key words in each tweet 
 reg <- "([^A-Za-z\\d#@']|'(?![A-Za-z\\d#@]))"
 tweet_words <- trump_tweets %>%
@@ -74,9 +67,9 @@ tweet_words <- trump_tweets %>%
   unnest_tokens(word, text, token = "regex", pattern = reg) %>%
   filter(!word %in% stop_words$word,
          str_detect(word, "[a-z]"))
-#add severeal key workds to the model? (whether used or not?)
+#add several key words to the model? (whether used or not?)
 #check the frequency of keywords?
-=======
+
 # While not a large predictor, Trump seems to like to mention "Democrats" and "Republican"
 trump_tweets %>% count(source,
                        Democrats = ifelse(str_detect(text, "(Democrat)"),
@@ -90,7 +83,7 @@ trump_tweets %>% count(source,
 
 trump_tweets <-mutate(trump_tweets, Republican = ifelse(str_detect(text, "(Republican)"), "yes", "no"),
                       Democrat = ifelse(str_detect(text, "(Republican)"), "yes", "no"))
->>>>>>> 6371b7cd62605099b3478d5e9b0d796048e78fbf
+
 
 # C) Divide dataset -------------------------------------------------------
 
@@ -98,22 +91,17 @@ trump_tweets <-mutate(trump_tweets, Republican = ifelse(str_detect(text, "(Repub
 dt = sort(sample(nrow(trump_tweets), nrow(trump_tweets)*.8))
 training <- trump_tweets[dt,]
 test <- trump_tweets[-dt,]
-
   
 # Naive Bayes model
-nb<- naive_bayes(source~hour+mutlimedia+retweet+hashtag ,data= training,prior = NULL, laplace = 1 )
-NB_Predictions=predict(nb,test)
-summary(NB_Predictions)
-
-
-<<<<<<< HEAD
-#Load the test dataset trump_hidden_test_set.csv
-#test_data<-read_csv("./Data/trump_data.tsv")
-=======
 nb_model <- training %>% 
-  naive_bayes(source ~ mutlimedia + retweet + hashtag + Republican + Democrat,laplace = 1,data=.)
+  naive_bayes(source ~ multimedia + retweet + hashtag + Republican + Democrat,laplace = 1,data=.)
 
 test <- mutate(test, prediction = predict(nb_model,test))
 
 
->>>>>>> 6371b7cd62605099b3478d5e9b0d796048e78fbf
+#Load the test dataset trump_hidden_test_set.csv
+#test_data<-read_csv("./Data/trump_data.tsv")
+
+
+
+
