@@ -18,7 +18,8 @@ library(e1071)
 library(tidytext)
 
 trump_tweets <- read_tsv("./Data/trump_data.tsv", col_names = c("source", "time_posted", "text"))
-
+#read in test data
+hidden_test_data = read_tsv("./Data/trump_hidden_test_set.tsv",col_names = c("source", "time_posted", "text"))
 
 # B) Clean/organize dataset --------------------------------------------------
 
@@ -110,9 +111,13 @@ recall
 
 
 # D) Divide dataset and implement the classifier -------------------------------------------------------
-#read in test data
-hidden_test_data = read_tsv("./Data/trump_hidden_test_set.tsv",col_names = FALSE)
-
+hidden_test_data<-hidden_test_data %>% mutate(hour = hour(with_tz(time_posted, "EST")),
+                            multimedia = ifelse(str_detect(text, "t.co"), "multimedia", "just text"),
+                            retweet = ifelse(str_detect(text, '^"'), "yes", "no"),
+                            hashtag = ifelse(str_detect(text, "#"), "yes", "no"),
+                            Republican = ifelse(str_detect(text, "(Republican)"), "yes", "no"),
+                            Democrat = ifelse(str_detect(text, "(Democrat)"), "yes", "no")
+                            )
 #Predictions
 prediction<-ifelse(predict(nb_model,hidden_test_data)=="Trump",1,0)
 write_csv(data.frame(prediction),"prediction.csv")
