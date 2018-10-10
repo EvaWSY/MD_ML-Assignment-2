@@ -75,6 +75,12 @@ trump_tweets %>% count(source,
 trump_tweets <-mutate(trump_tweets, Republican = ifelse(str_detect(text, "(Republican)"), "yes", "no"),
                       Democrat = ifelse(str_detect(text, "(Republican)"), "yes", "no"))
 
+# Words "join" only comes from iphone, here can be used as a predictor. (not a large predictor)
+trump_tweets %>% count(
+  source, join = ifelse(str_detect(text, "join"), "join", "no join")
+) %>% 
+  mutate(percent = n / sum(n))
+trump_tweets <-mutate(trump_tweets, join = ifelse(str_detect(text, "join"), "yes", "no"))
 
 
 # C) Divide dataset -------------------------------------------------------

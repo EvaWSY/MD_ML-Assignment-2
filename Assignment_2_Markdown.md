@@ -6,12 +6,44 @@ A: Explore the exit poll data
 
     #Read in data
     poll_data <- read_tsv("./Data/poll_data.tsv")
+    names(poll_data)
+
+    ## [1] "state"               "sex"                 "race"               
+    ## [4] "age"                 "education"           "party"              
+    ## [7] "ideology"            "vote_2008"           "state_contestedness"
+
+    summary(poll_data)
+
+    ##     state               sex                race          
+    ##  Length:10000       Length:10000       Length:10000      
+    ##  Class :character   Class :character   Class :character  
+    ##  Mode  :character   Mode  :character   Mode  :character  
+    ##      age             education            party          
+    ##  Length:10000       Length:10000       Length:10000      
+    ##  Class :character   Class :character   Class :character  
+    ##  Mode  :character   Mode  :character   Mode  :character  
+    ##    ideology          vote_2008         state_contestedness
+    ##  Length:10000       Length:10000       Length:10000       
+    ##  Class :character   Class :character   Class :character   
+    ##  Mode  :character   Mode  :character   Mode  :character
 
 B: Build a logistic regression model
 ------------------------------------
 
-    poll_data$vote_2008 <- factor(poll_data$vote_2008,levels = c("john mcCain","barack obama"))
-    poll_data$race <- factor(poll_data$race,levels = c("white","black","hispanic","other"))
+    #Transform vote_2008 into binary and race into a factor variable
+    poll_data <- poll_data %>% 
+      transmute(
+        state,
+        sex,
+        race,
+        age,
+        education,
+        party,
+        ideology,
+        vote_2008 = ifelse(vote_2008 == "barack obama", 1, 0),
+        state_contestedness
+      )
+
     #Run logistic model with all variables
     poll_model <- glm(formula = vote_2008 ~ 1 + .,family = "binomial",data = poll_data)
 
@@ -23,11 +55,13 @@ B: Build a logistic regression model
     ##     sexmale    age30-44    age45-64      age65+ 
     ## -0.02321378 -0.34525901 -0.40933955 -0.34643386
 
-Keep in mind that these coefficients are relative to the reference
-group. Being a male decreases the log odds of voting for Obama by 0.0232
-when compared to being a female. The older the age bracket a person is
-in, decreases the log odds of voting for Obama by above amounts when
-compared to the 18-29 age bracket.
+Some levels for an variable is dropped by the model to avoid
+multicollinearity, because they serve as the reference points for the
+other levels for the same variable. The coefficients listed in the model
+are relative to the reference group. Being a male decreases the log odds
+of voting for Obama by 0.0232 when compared to being a female. The older
+the age bracket a person is in, decreases the log odds of voting for
+Obama by the above amounts when compared to the 18-29 age bracket.
 
 #### ii. Provide a summary of the model. What is your interpretation of these values?
 
@@ -43,7 +77,7 @@ compared to the 18-29 age bracket.
     ## 
     ## Coefficients: (3 not defined because of singularities)
     ##                                         Estimate Std. Error z value
-    ## (Intercept)                            0.7728950  0.5111082   1.512
+    ## (Intercept)                            3.8446136  0.5360023   7.173
     ## stateAL                               -0.9283177  0.5812652  -1.597
     ## stateAR                               -0.7791709  0.6472584  -1.204
     ## stateAZ                               -1.0181255  0.5606299  -1.816
@@ -93,9 +127,9 @@ compared to the 18-29 age bracket.
     ## stateWV                               -0.9515174  0.5974557  -1.593
     ## stateWY                               -0.3903291  0.8817166  -0.443
     ## sexmale                               -0.0232138  0.0623108  -0.373
-    ## raceblack                              3.0717186  0.1837157  16.720
-    ## racehispanic                           0.7213999  0.1190000   6.062
-    ## raceother                              0.3310769  0.1472548   2.248
+    ## racehispanic                          -2.3503187  0.2104499 -11.168
+    ## raceother                             -2.7406417  0.2293857 -11.948
+    ## racewhite                             -3.0717186  0.1837157 -16.720
     ## age30-44                              -0.3452590  0.0964330  -3.580
     ## age45-64                              -0.4093395  0.0912896  -4.484
     ## age65+                                -0.3464339  0.1130235  -3.065
@@ -110,7 +144,7 @@ compared to the 18-29 age bracket.
     ## state_contestednesssolid obama                NA         NA      NA
     ## state_contestednesssolid romney               NA         NA      NA
     ##                                       Pr(>|z|)    
-    ## (Intercept)                           0.130484    
+    ## (Intercept)                           7.35e-13 ***
     ## stateAL                               0.110251    
     ## stateAR                               0.228666    
     ## stateAZ                               0.069364 .  
@@ -160,9 +194,9 @@ compared to the 18-29 age bracket.
     ## stateWV                               0.111246    
     ## stateWY                               0.657988    
     ## sexmale                               0.709485    
-    ## raceblack                              < 2e-16 ***
-    ## racehispanic                          1.34e-09 ***
-    ## raceother                             0.024555 *  
+    ## racehispanic                           < 2e-16 ***
+    ## raceother                              < 2e-16 ***
+    ## racewhite                              < 2e-16 ***
     ## age30-44                              0.000343 ***
     ## age45-64                              7.33e-06 ***
     ## age65+                                0.002176 ** 
@@ -187,15 +221,22 @@ compared to the 18-29 age bracket.
     ## 
     ## Number of Fisher Scoring iterations: 6
 
-The log odds of voting for Obama is a positive one (as given by the
-positive value of the intercept) with the reference demographic. In this
-case, the reference demographic is a white, female, high school
-graduate, 18-29 age bracket, democrat, with a conservative ideology
-living in Alaska (AK). The other covariates coefficients describe the
-increase or decrease in the log odds of voting for Obama based on the
-state, race, age group, ideology, education level, and political party
-the person is in. The reason for the NAs for the state\_contestedness
-variables, is due to collinearity with the state info (I think).
+The coefficients describe the increase or decrease in the log odds of
+voting for Obama based on the state, race, age group, ideology,
+education level, and political party the person is in. However, only a
+handful of independent variables are statistically significant in this
+model: - raceblack, racehispanic, and raceother. A non-white person is
+more likely to vote for Obama. Being black, in particular, is associated
+with an increase of log odds by 3.07 to support Obama, which is much
+higher than the increase of log odds associated with other non-white
+races and ethnicities. - `age30-44`, `age45-64`, and `age65+`. These age
+groups are associated with a decrease log odds to vote for Obama. -
+`educationhigh school graduate`, and `educationsome college`. These
+education groups are associated with a decrease log odds to vote for
+Obama. - If a person is not a democrat, they are more likely to vote for
+mcCain. - A liberal or moderate person is more likely to vote for Obama.
+The reason for the NAs for the state\_contestedness variables, is due to
+perfect collinearity with the state info.
 
 #### iii. Convert the probabilistic predictions for each individual into binary predictions, based on the candidate they are most likely to vote for. Compute accuracy, precision, and recall for your predictions.
 
@@ -204,12 +245,103 @@ variables, is due to collinearity with the state info (I think).
     #Change this to binary predictions based on if the predicted probability is >0.5 = "obama"
     poll_data <- mutate(poll_data, predict1 = ifelse(poll_model_pred > 0.5,"barack obama","john mcCain"))
 
-    ## Warning: package 'bindrcpp' was built under R version 3.3.3
+    # Calculate accuracy, assuming Obama is the positive result (accuracy = (true psoitive +true negative)/total observations)
+    total_obs <- 10000L
+
+    accurate_pred <- poll_data %>% 
+      filter(
+        (vote_2008 == "1" & predict1 == "barack obama") | ((vote_2008 == "0" & predict1 == "john mcCain"))
+      ) %>% 
+      nrow()
+
+    accurate_pred/total_obs*100
+
+    ## [1] 85.77
+
+    # Recall (recall = true positive/total actual postive)
+
+    true_pos <- poll_data %>% 
+      filter(
+       vote_2008 == "1" & predict1 == "barack obama"
+      ) %>% 
+      nrow()
+
+    positives <- poll_data %>% filter(vote_2008 == "1") %>% nrow()
+
+    true_pos/positives*100
+
+    ## [1] 89.50866
+
+    # Precision (precision = true positive/total predicted positive)
+
+    pred_positives <- poll_data %>% filter(predict1 == "barack obama") %>% nrow()
+
+    true_pos/pred_positives*100
+
+    ## [1] 86.14944
+
+The overall accuracy rate for the model is 85.77%. The recall rate is
+89.5%. The precision is 86.1%.
 
 #### iv. Repeat step iii), but now convert each individual's prediction to a binary prediction for Obama only if the individual's probability of voting for Obama is at least 70%. What differences do you see in accuracy, precision, and recall compared to step iii)?
 
     #Change probability to binary predictions based on if the predicted probability is >=0.7 = "obama"
-    poll_data <- mutate(poll_data, predict1 = ifelse(poll_model_pred >= 0.7,"barack obama","john mcCain"))
+    poll_data <- mutate(poll_data, predict2 = ifelse(poll_model_pred >= 0.7,"barack obama","john mcCain"))
+    # Calculate accuracy, assuming Obama is the positive result
+    total_obs <- 10000L
+
+    accurate_pred2 <- poll_data %>% 
+      filter(
+        (vote_2008 == "1" & predict2 == "barack obama") | ((vote_2008 == "0" & predict2 == "john mcCain"))
+      ) %>% 
+      nrow()
+
+    accurate_pred2/total_obs*100
+
+    ## [1] 82.93
+
+    # Recall
+
+    true_pos2 <- poll_data %>% filter(vote_2008 == "1" & predict2 == "barack obama") %>% nrow()
+
+    true_pos2/positives*100
+
+    ## [1] 77.11138
+
+    # Precision
+
+    pred_positives2 <- poll_data %>% filter(predict2 == "barack obama") %>% nrow()
+
+    true_pos2/pred_positives2*100
+
+    ## [1] 91.72213
+
+    #Compare the results of iii and iv
+    probability = c("at least 50%","at leasts 70%")
+    accuracy = c(accurate_pred/total_obs*100, accurate_pred2/total_obs*100)
+    recall = c(true_pos/positives*100,true_pos2/positives*100)
+    precision = c(true_pos/pred_positives*100,true_pos2/pred_positives2*100)
+
+    data.frame(probability,accuracy,recall,precision) %>% 
+      stargazer(.,type= "text",summary = F)
+
+    ## 
+    ## =========================================
+    ##    probability  accuracy recall precision
+    ## -----------------------------------------
+    ## 1 at least 50%   85.770  89.509  86.149  
+    ## 2 at leasts 70%  82.930  77.111  91.722  
+    ## -----------------------------------------
+
+-   The overall accuracy is 82.93%. A little lower than in step iii
+    (85.77%).
+-   Recall here is 77.1% and precision is 91.7%. Even though recall is
+    significantly lower than in step iii, precision is improved. It
+    means when increasing the prediction probabilities, the ability of
+    making predicted positives that are true postives are increased. So
+    the model is less likely to classify a person as Obama's supporter
+    when they are actually not than the previous configuration in
+    step iii.
 
 C: Download and explore the revised exit poll data
 --------------------------------------------------
@@ -220,20 +352,20 @@ C: Download and explore the revised exit poll data
 #### i. Using this revised exit poll data, build a binary logistic regression model to predict whether an individual voted for a major-party candidate in the 2008 elections. Make a histogram of the resulting predicted probabilities using ggplot2.
 
     #create a new variable collapsing obama and mcCain votes to 1 and others as 0
-    poll_data_full = mutate(poll_data_full,major_or_not = ifelse(vote_2008 == "other",0,1))
-
+    poll_data_full = mutate(poll_data_full,major_or_not = ifelse(vote_2008 == "other",0,1)) 
     #Logistic Regression
-    poll_full_model <- glm(formula = major_or_not ~ 1 + .,family = "binomial",data = poll_data_full %>% select(-vote_2008))
+    poll_full_model <- glm(formula = major_or_not ~ 1 + .,family = "binomial",data = poll_data_full %>% dplyr::select(-vote_2008))
 
     #Convert to probabilistic predictions
     poll_full_model_pred <- predict(poll_full_model, type = 'response')
+    poll_data_full <- mutate(poll_data_full,predictprob = poll_full_model_pred)
 
     #Histogram with predicted probabilities
-    ggplot(poll_data_full %>% mutate(predictprob = poll_full_model_pred),aes(x=predictprob)) +
+    ggplot(poll_data_full,aes(x=predictprob)) +
       geom_histogram(bins = 100) +
       labs(x = "Probability of Voting for Major Candidate (2008)")
 
-![](Assignment_2_Markdown_files/figure-markdown_strict/unnamed-chunk-9-1.png)
+![](Assignment_2_Markdown_files/figure-markdown_strict/unnamed-chunk-10-1.png)
 
 #### ii. Filter the revised exit poll data to only individuals who actually voted for major party candidates. On this subset, build a binary logistic regression model to predict whether an individual voted for Obama. This gives an estimate of Pr(voted Obama | voted major party candidate).
 
@@ -243,18 +375,64 @@ C: Download and explore the revised exit poll data
     poll_full_major_data$vote_2008 <- factor(poll_full_major_data$vote_2008,levels = c("john mcCain","barack obama"))
 
     #Logistic regression
-    poll_full_major_model <- glm(formula = vote_2008 ~ 1 + .,family = "binomial",data = poll_full_major_data %>% select(-major_or_not))
+    poll_full_major_model <- glm(formula = vote_2008 ~ 1 + .,family = "binomial",data = poll_full_major_data %>% dplyr::select(-major_or_not))
 
 #### iii. Using the model from step ii), generate estimates of Pr(voted Obama | voted major party candidate) for every individual in the revised exit poll data, and make a histogram of the resulting predicted probabilities using ggplot2.
 
     #Convert to probabilistic predictions
     poll_full_major_model_pred <- predict(poll_full_major_model, type = 'response')
-
+    poll_full_major_data <- mutate(poll_full_major_data,predictprob = poll_full_major_model_pred)
     #Histogram of the predicted conditional probability
-    ggplot(poll_full_major_data %>% mutate(predictprob = poll_full_major_model_pred),aes(x=predictprob)) +
+    ggplot(poll_full_major_data,aes(x=predictprob)) +
       geom_histogram(bins = 100) +
       labs(x = "Probability of Voting for Obama | Voted Major Candidate (2008)")
 
-![](Assignment_2_Markdown_files/figure-markdown_strict/unnamed-chunk-11-1.png)
+![](Assignment_2_Markdown_files/figure-markdown_strict/unnamed-chunk-12-1.png)
 
 #### iv. Use the models from steps i) and ii) to compute, for each individual, the probability that the individual votes for the three candidates. Generate categorical predictions for each individual based on these probabilities, and report the accuracy of your classifier.
+
+    # In i) we predicted whether a person was going to vote other. In ii) we predicted whether those who voted major candidates voted either obama or mcCain. We would just need to combine these two predictions into one via a two-step categorizing process.
+
+    # The problem is the prediction of whether a person voted for a major candidate or not did not seem accurate, as the predicted probablities were mostly 90%+. I'll try building grid search function to find the optimal cutoff for accuracy.
+    OptAccuracy <- function(dataframe, PredictVarName,ClassifierVarName){
+      PredictedClassifier <- dataframe[,PredictVarName]
+      Classifier <- dataframe[,ClassifierVarName]
+      nPoints <- nrow(PredictedClassifier)
+      p_grid <- seq(from = min(PredictedClassifier), to = max(PredictedClassifier),length.out = nPoints)
+      AccuracyVector <- rep(NA,nPoints)
+      
+      for(i in 1:length(p_grid)){
+        AccuracyVector[i] <- sum(ifelse(PredictedClassifier > p_grid[i],1,0) == Classifier)/nPoints
+      }
+      
+      p_grid[which.max(AccuracyVector)]
+      #plot(AccuracyVector~p_grid)
+    }
+
+    OptAccuracy(poll_data_full,"predictprob","major_or_not")
+
+    ## [1] 0.7380653
+
+We see the optimal cutoff is the minimum prediction probability. In
+other words, to improve our accuracy, we should essentially predict
+everybody to have voted for a major candidate.
+
+    poll_full_major_data <- mutate(poll_full_major_data, vote_2008 = ifelse(vote_2008 == "barack obama", 1, 0))
+    OptAccuracy(poll_full_major_data,"predictprob","vote_2008")
+
+    ## [1] 0.5292218
+
+Within the people who voted a major candidate, the optimal cutoff point
+for the highest accuracy is around 0.5.
+
+    # Create categorical predictions for the three candidates 
+    poll_data_full <- mutate(poll_data_full,pred_candidates = NA)
+    poll_data_full[,"pred_candidates"] <- ifelse(poll_full_model_pred < 0.7380653,"Other",NA)
+    poll_data_full[which(poll_data_full$major_or_not == 1),"pred_candidates"] <- ifelse(poll_full_major_model_pred >= 0.5,"barack obama","john mcCain")
+
+    #Accuracy
+    sum(poll_data_full$pred_candidates == poll_data_full$vote_2008,na.rm=T)/nrow(poll_data_full)
+
+    ## [1] 0.8414
+
+-   The accuracy of our classifier is 84.14%

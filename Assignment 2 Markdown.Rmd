@@ -134,7 +134,9 @@ probability = c("at least 50%","at leasts 70%")
 accuracy = c(accurate_pred/total_obs*100, accurate_pred2/total_obs*100)
 recall = c(true_pos/positives*100,true_pos2/positives*100)
 precision = c(true_pos/pred_positives*100,true_pos2/pred_positives2*100)
-data.frame(probability,accuracy,recall,precision)
+
+data.frame(probability,accuracy,recall,precision) %>% 
+  stargazer(.,type= "text",summary = F)
 ```
  - The overall accuracy is 82.93%. A little lower than in step iii (85.77%).
  - Recall here is 77.1% and precision is 91.7%. Even though recall is significantly lower than in step iii, precision is improved. It means when increasing the prediction probabilities, the ability of making predicted positives that are true postives are increased. So the model is less likely to classify a person as Obama's supporter when they are actually not than the previous configuration in step iii. 
@@ -232,16 +234,4 @@ sum(poll_data_full$pred_candidates == poll_data_full$vote_2008,na.rm=T)/nrow(pol
  - The accuracy of our classifier is 84.14%
 
 
-```{r}
 
-# Create categorical predictions for the three candidates 
-poll_data_full <- poll_data_full %>% 
-  mutate(
-   pred_candidates = case_when(
-     poll_full_model_pred < 0.5 ~"Other",
-     poll_full_major_model_pred > 0.5 ~ "barack obama", 
-     poll_full_major_model_pred < 0.5 ~ "john mcCain") #doesn't run because poll_full_major_model_pred does not apply to all individuals
-
-# Accuracy   
-   
-```
