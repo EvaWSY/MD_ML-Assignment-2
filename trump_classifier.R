@@ -60,16 +60,6 @@ trump_tweets %>% count(
   mutate(percent = n / sum(n))
 trump_tweets <-mutate(trump_tweets, hashtag = ifelse(str_detect(text, "#"), "yes", "no"))
 
-#Comparison of words: extract key words in each tweet 
-reg <- "([^A-Za-z\\d#@']|'(?![A-Za-z\\d#@]))"
-tweet_words <- trump_tweets %>%
-  filter(!str_detect(text, '^"')) %>%
-  mutate(text = str_replace_all(text, "https://t.co/[A-Za-z\\d]+|&amp;", "")) %>%
-  unnest_tokens(word, text, token = "regex", pattern = reg) %>%
-  filter(!word %in% stop_words$word,
-         str_detect(word, "[a-z]"))
-#add several key words to the model? (whether used or not?)
-#check the frequency of keywords?
 
 # While not a large predictor, Trump seems to like to mention "Democrats" and "Republican"
 trump_tweets %>% count(source,
@@ -84,6 +74,7 @@ trump_tweets %>% count(source,
 
 trump_tweets <-mutate(trump_tweets, Republican = ifelse(str_detect(text, "(Republican)"), "yes", "no"),
                       Democrat = ifelse(str_detect(text, "(Republican)"), "yes", "no"))
+
 
 
 # C) Divide dataset -------------------------------------------------------
