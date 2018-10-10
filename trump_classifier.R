@@ -19,7 +19,7 @@ library(tidytext)
 
 trump_tweets <- read_tsv("./Data/trump_data.tsv", col_names = c("source", "time_posted", "text"))
 #read in test data
-hidden_test_data = read_tsv("./Data/trump_hidden_test_set.tsv",col_names = c("source", "time_posted", "text"))
+hidden_test_data = read_tsv('./Data/trump_hidden_test_set.tsv',col_names = c('source', 'time_posted','text'), quote='')
 
 # B) Clean/organize dataset --------------------------------------------------
 
@@ -119,8 +119,14 @@ hidden_test_data<-hidden_test_data %>% mutate(hour = hour(with_tz(time_posted, "
                             Democrat = ifelse(str_detect(text, "(Democrat)"), "yes", "no")
                             )
 #Predictions
+predt<-predict(nb_model,hidden_test_data)
 prediction<-ifelse(predict(nb_model,hidden_test_data)=="Trump",1,0)
 write_csv(data.frame(prediction),"prediction.csv")
 
-
-
+# check for performance
+accurate_predt <- sum(hidden_test_data$source == predt)/nrow(hidden_test_data)
+accurate_predt
+precisiont <-sum(hidden_test_data$source==predt & predt =="Trump")/sum(predt=="Trump")
+precisiont
+recallt <- sum(hidden_test_data$source==predt & predt == "Trump")/(sum(hidden_test_data$source =="Trump"))
+recallt
